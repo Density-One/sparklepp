@@ -10,16 +10,14 @@ Sparkle.mm
 
 #if SPARKLE_UPDATER_ENABLE
 
-#define SPU_OBJC_DIRECT_MEMBERS __attribute__((objc_direct_members))
-#define SPU_OBJC_DIRECT __attribute__((objc_direct))
+#define SPU_OBJC_DIRECT_MEMBERS __attribute__ ((objc_direct_members))
+#define SPU_OBJC_DIRECT __attribute__ ((objc_direct))
 
 #import <Sparkle/Sparkle.h>
 #import "SPUModifiedUpdaterController.mm"
 #import "SPUCommandLineUserDriver.mm"
 #import "SUUpdatePermissionResponse.mm"
 #import "sparklepp.h"
-
-
 
 @interface SparkleDelegate : NSObject <SPUUpdaterDelegate>
 {
@@ -96,6 +94,24 @@ Called after an update is aborted due to an error.
     return self;
 }
 
+- (juce::String)NSErrorToJuceString:(NSError*)error
+{
+    if (! error)
+        return {};
+
+    // Get the localized description of the error
+    NSString* errorDescription = [error localizedDescription];
+    const char* utf8ErrorDescription = [errorDescription UTF8String];
+
+    // Get the error code
+    NSInteger errorCode = [error code];
+
+    // Construct the detailed error string
+    juce::String detailedErrorString = juce::String ("Error: ") + juce::String (utf8ErrorDescription) + ", Code: " + juce::String (static_cast<int> (errorCode));
+
+    return detailedErrorString;
+}
+
 /*!
 Returns whether Sparkle should prompt the user about automatic update checks.
 
@@ -117,7 +133,8 @@ Called when a valid update is found by the update driver.
 - (void)updater:(SPUUpdater*)updater didFindValidUpdate:(SUAppcastItem*)item
 {
     NSLog (@"Found update: %@", [item displayVersionString]);
-    delegateHandler->didFindValidUpdate();
+
+    delegateHandler->didFindValidUpdate ([[item displayVersionString] UTF8String]);
 }
 
 /*!
@@ -139,7 +156,7 @@ Called after the specified update failed to download.
 */
 - (void)updater:(SPUUpdater*)updater failedToDownloadUpdate:(SUAppcastItem*)item error:(NSError*)error;
 {
-    delegateHandler->updaterDidNotFindUpdate();
+    delegateHandler->failedToDownload ([[item displayVersionString] UTF8String], [self NSErrorToJuceString:error]);
 }
 
 /*!
@@ -160,7 +177,7 @@ Called after an update is aborted due to an error.
 */
 - (void)updater:(SPUUpdater*)updater didAbortWithError:(NSError*)error
 {
-    delegateHandler->updaterDidNotFindUpdate();
+    delegateHandler->didAbortWithError ([self NSErrorToJuceString:error]);
 }
 
 /*
@@ -210,14 +227,27 @@ void Sparkle::checkForUpdateInformation()
     [updaterDelegate.updaterController.updater checkForUpdateInformation];
 }
 
-void Sparkle::didFindValidUpdate()
+void Sparkle::didFindValidUpdate (const String& version)
 {
-    listeners.call (&Listener::didFindValidUpdate);
+    listeners.call ([&version] (Listener& l)
+                    { l.didFindValidUpdate (version); });
 }
 
 void Sparkle::updaterDidNotFindUpdate()
 {
     listeners.call (&Listener::updaterDidNotFindUpdate);
+}
+
+void Sparkle::didAbortWithError (const String& error)
+{
+    listeners.call ([&error] (Listener& l)
+                    { l.didAbortWithError (error); });
+}
+
+void Sparkle::failedToDownload (const juce::String& version, const juce::String& explanation)
+{
+    listeners.call ([&version, &explanation] (Listener& l)
+                    { l.failedToDownload (version, explanation); });
 }
 
 void Sparkle::addListener (Listener* listener)

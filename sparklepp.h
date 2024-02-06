@@ -67,23 +67,27 @@ public:
     class Listener
     {
     public:
-        virtual ~Listener() {}
+        virtual ~Listener() = default;
 
-        virtual void didFindValidUpdate() {}
-        virtual void updaterDidNotFindUpdate() {}
+        virtual void didFindValidUpdate (const juce::String& version) = 0;
+        virtual void updaterDidNotFindUpdate() = 0;
+        virtual void didAbortWithError (const juce::String& error) = 0;
+        virtual void failedToDownload (const juce::String& version, const juce::String& explanation) = 0;
     };
 
     void addListener (Listener* listener);
     void removeListener (Listener* listener);
 
     /* internal */
-    void didFindValidUpdate();
+    void didFindValidUpdate (const juce::String& version);
     void updaterDidNotFindUpdate();
+    void didAbortWithError (const juce::String& error);
+    void failedToDownload (const juce::String& version, const juce::String& explanation);
     void setChannels (std::vector<std::string> allowedChannels)
     {
         channels = std::move (allowedChannels);
     }
-    std::vector<std::string> allowedChannelsForUpdater() const
+    [[nodiscard]] std::vector<std::string> allowedChannelsForUpdater() const
     {
         return channels;
     }
