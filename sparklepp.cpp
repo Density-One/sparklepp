@@ -7,55 +7,62 @@
 
   ==============================================================================
 */
+#if JUCE_WINDOWS
+#include "Native\Win\winsparkle.h"
+#endif
 
-//#include "Native\Win\winsparkle.h"
 #include <algorithm>
 
 #include "sparklepp.h"
 
-class Sparkle::Private {
+class Sparkle::Private
+{
 public:
-    Private (URL appcastURL) :
-        initialised (false),
-        appcastURL (appcastURL)
+    Private (URL appcastURL)
+        : initialised (false),
+          appcastURL (appcastURL)
     {
-
     }
 
     bool initialised;
     const URL appcastURL;
-
 private:
     Private operator= (Private) = delete;
 };
 
 Sparkle::Sparkle (const juce::URL& /*appcastUrl*/)
 {
-//    d = new Private (appcastUrl);
-//    win_sparkle_set_appcast_url (appcastUrl.toString (true).toUTF8());
+#if JUCE_WINDOWS
+    d = new Private (appcastUrl);
+    win_sparkle_set_appcast_url (appcastUrl.toString (true).toUTF8());
+#endif
 }
 
-Sparkle::~Sparkle ()
+Sparkle::~Sparkle()
 {
-    //if (d->initialised)
-    //{
-    //    win_sparkle_init();
-    //    d->initialised = false;
-    //}
+#if JUCE_WINDOWS
+
+    if (d->initialised)
+    {
+        win_sparkle_init();
+        d->initialised = false;
+    }
+#endif
 }
 
-void Sparkle::checkForUpdateInBackground ()
+void Sparkle::checkForUpdateInBackground()
 {
-    //if (!d->initialised)
-    //{
-    //    win_sparkle_init ();
-    //    d->initialised = true;
-    //}
+#if JUCE_WINDOWS
+
+    if (! d->initialised)
+    {
+        win_sparkle_init();
+        d->initialised = true;
+    }
+#endif
 }
 
-
-
-static int isVersionNumberGreater (const String &firstVersionNumber, const String& secondVersionNumber)
+static int isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber)
 {
     auto first = StringArray::fromTokens (firstVersionNumber, "vV.", "");
     auto second = StringArray::fromTokens (secondVersionNumber, "vV.", "");
@@ -63,13 +70,13 @@ static int isVersionNumberGreater (const String &firstVersionNumber, const Strin
     first.removeString ("");
     second.removeString ("");
 
-    for (int i = 0; i < first.size (); ++i)
+    for (int i = 0; i < first.size(); ++i)
     {
-        if (first[i].getIntValue () > second[i].getIntValue ())
+        if (first[i].getIntValue() > second[i].getIntValue())
         {
             return -1;
         }
-        else if (first[i].getIntValue () < second[i].getIntValue ())
+        else if (first[i].getIntValue() < second[i].getIntValue())
         {
             return 1;
         }
@@ -81,15 +88,15 @@ static int isVersionNumberGreater (const String &firstVersionNumber, const Strin
 class VersionNumberDescendingComparitor
 {
 public:
-    VersionNumberDescendingComparitor () {}
+    VersionNumberDescendingComparitor() {}
 
     int compareElements (XmlElement* first, XmlElement* second)
     {
         auto firstEnclosure = first->getChildByName ("enclosure");
-        auto firstVersionNumber = firstEnclosure->getStringAttribute ("sparkle:version", juce::String ());
+        auto firstVersionNumber = firstEnclosure->getStringAttribute ("sparkle:version", juce::String());
 
         auto secondEnclosure = second->getChildByName ("enclosure");
-        auto secondVersionNumber = secondEnclosure->getStringAttribute ("sparkle:version", juce::String ());
+        auto secondVersionNumber = secondEnclosure->getStringAttribute ("sparkle:version", juce::String());
 
         return isVersionNumberGreater (firstVersionNumber, secondVersionNumber);
     }
@@ -99,13 +106,13 @@ static String getLatestVersionNumber (XmlElement* xml)
 {
     if (xml == nullptr)
     {
-        return String ();
+        return String();
     }
 
     if (xml->hasTagName ("rss") == false)
     {
         Logger::outputDebugString ("getLatestVersionNumber: RSS tag not found");
-        return String ();
+        return String();
     }
 
     auto channel = xml->getChildByName ("channel");
@@ -113,7 +120,7 @@ static String getLatestVersionNumber (XmlElement* xml)
     if (channel == nullptr)
     {
         Logger::outputDebugString ("getLatestVersionNumber: Channel not found");
-        return String ();
+        return String();
     }
 
     auto item = channel->getChildByName ("item");
@@ -121,10 +128,10 @@ static String getLatestVersionNumber (XmlElement* xml)
     if (item == nullptr)
     {
         Logger::outputDebugString ("getLatestVersionNumber: No items found");
-        return String ();
+        return String();
     }
 
-    std::unique_ptr<juce::Array<juce::XmlElement*>> items = std::make_unique<juce::Array<XmlElement*>> ();
+    std::unique_ptr<juce::Array<juce::XmlElement*>> items = std::make_unique<juce::Array<XmlElement*>>();
 
     while (item != nullptr)
     {
@@ -136,44 +143,43 @@ static String getLatestVersionNumber (XmlElement* xml)
     items->sort (versionNumberDescendingComparitor);
 
     auto latestRelease = items->getFirst()->getChildByName ("enclosure");
-    
+
     if (latestRelease == nullptr)
     {
         Logger::outputDebugString ("getLatestVersionNumber: Latest release not found");
-        return String ();
+        return String();
     }
 
-    return latestRelease->getStringAttribute ("sparkle:version", juce::String ());
+    return latestRelease->getStringAttribute ("sparkle:version", juce::String());
 }
 
-static String getCurrentInstalledVersion ()
+static String getCurrentInstalledVersion()
 {
-    return JUCEApplicationBase::getInstance ()->getApplicationVersion ();
+    return JUCEApplicationBase::getInstance()->getApplicationVersion();
 }
 
-void Sparkle::checkForUpdateInformation ()
+void Sparkle::checkForUpdateInformation()
 {
     if (d == nullptr)
         return;
 
-    auto xml = d->appcastURL.readEntireXmlStream ();
+    auto xml = d->appcastURL.readEntireXmlStream();
 
     if (xml == nullptr)
     {
-        updaterDidNotFindUpdate ();
+        updaterDidNotFindUpdate();
         return;
     }
 
-    String latestReleaseVersion = getLatestVersionNumber (xml.get ());
+    String latestReleaseVersion = getLatestVersionNumber (xml.get());
 
-    if ((latestReleaseVersion.isEmpty ()) || 
-        isVersionNumberGreater (getCurrentInstalledVersion (), latestReleaseVersion) != 1)
-    { 
-        updaterDidNotFindUpdate ();
+    if ((latestReleaseVersion.isEmpty()) || isVersionNumberGreater (getCurrentInstalledVersion(), latestReleaseVersion) != 1)
+    {
+        updaterDidNotFindUpdate();
     }
     else
     {
-        didFindValidUpdate ();
+        didFindValidUpdate();
     }
 }
 
@@ -187,12 +193,12 @@ void Sparkle::removeListener (Listener* listener)
     listeners.remove (listener);
 }
 
-void Sparkle::didFindValidUpdate ()
+void Sparkle::didFindValidUpdate()
 {
     listeners.call (&Listener::didFindValidUpdate);
 }
 
-void Sparkle::updaterDidNotFindUpdate ()
+void Sparkle::updaterDidNotFindUpdate()
 {
     listeners.call (&Listener::updaterDidNotFindUpdate);
 }
@@ -200,20 +206,21 @@ void Sparkle::updaterDidNotFindUpdate ()
 class AppcaspParserTests : public UnitTest
 {
 public:
-    AppcaspParserTests () : UnitTest ("Appcasp Parser testing")
+    AppcaspParserTests()
+        : UnitTest ("Appcasp Parser testing")
     {
         oneReleaseFixture = XmlDocument::parse (oneReleaseFixtureContent);
         twoReleaseFixture = XmlDocument::parse (twoReleaseFixtureContent);
     }
 
-    void runTest () override
+    void runTest() override
     {
-        isVersionNumberGreaterTest ();
+        isVersionNumberGreaterTest();
 
-        appcastParsingTest ();
+        appcastParsingTest();
     }
 
-    void isVersionNumberGreaterTest ()
+    void isVersionNumberGreaterTest()
     {
         beginTest ("isVersionNumberGreater");
         expect (isVersionNumberGreater ("v1.0.0", "v0.0.1") == -1);
@@ -233,21 +240,19 @@ public:
         expect (isVersionNumberGreater ("1.0.0", "V1.0.0") == 0);
     }
 
-    void appcastParsingTest ()
+    void appcastParsingTest()
     {
         beginTest ("getLatestVersionNumber");
-        expect (getLatestVersionNumber (oneReleaseFixture.get ()) == String ("2.0"));
+        expect (getLatestVersionNumber (oneReleaseFixture.get()) == String ("2.0"));
 
-        expect (getLatestVersionNumber (twoReleaseFixture.get ()) == String ("2.1"));
+        expect (getLatestVersionNumber (twoReleaseFixture.get()) == String ("2.1"));
     }
-
 private:
     std::unique_ptr<XmlElement> oneReleaseFixture;
     std::unique_ptr<XmlElement> twoReleaseFixture;
 
     const String oneReleaseFixtureContent = { "<?xml version=\"1.0\" encoding=\"utf-8\"?><rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\"  xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><channel><title>Sparkle Test App Changelog</title><link>http://sparkle-project.org/files/sparkletestcast.xml</link><description>Most recent changes with links to updates.</description><language>en</language><item><title>Version 2.0</title><description><![CDATA[<ul><li>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li>Suspendisse sed felis ac ante ultrices rhoncus.Etiam quis elit vel nibh placerat facilisis in id leo.</li><li>Vestibulum nec tortor odio, nec malesuada libero.Cras vel convallis nunc.</li><li>Suspendisse tristique massa eget velit consequat tincidunt.Praesent sodales hendrerit pretium.</li></ul>]]></description><pubDate>Sat, 26 Jul 2014 15:20 : 11 + 0000</pubDate><enclosure url=\"https://sparkle-project.org/files/Sparkle%20Test%20App.zip\" sparkle:version=\"2.0\" length=\"107758\" type=\"application/octet-stream\" sparkle:dsaSignature=\"MCwCFCdoW13VBGJWIfIklKxQVyetgxE7AhQTVuY9uQT0KOV1UEk21epBsGZMPg==\"/></item></channel></rss>" };
     const String twoReleaseFixtureContent = { "<?xml version=\"1.0\" encoding=\"utf-8\"?><rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\"  xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><channel><title>Sparkle Test App Changelog</title><link>http://sparkle-project.org/files/sparkletestcast.xml</link><description>Most recent changes with links to updates.</description><language>en</language><item><title>Version 2.0</title><description><![CDATA[<ul><li>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li>Suspendisse sed felis ac ante ultrices rhoncus.Etiam quis elit vel nibh placerat facilisis in id leo.</li><li>Vestibulum nec tortor odio, nec malesuada libero.Cras vel convallis nunc.</li><li>Suspendisse tristique massa eget velit consequat tincidunt.Praesent sodales hendrerit pretium.</li></ul>]]></description><pubDate>Sat, 26 Jul 2014 15:20 : 11 + 0000</pubDate><enclosure url=\"https://sparkle-project.org/files/Sparkle%20Test%20App.zip\" sparkle:version=\"2.0\" length=\"107758\" type=\"application/octet-stream\" sparkle:dsaSignature=\"MCwCFCdoW13VBGJWIfIklKxQVyetgxE7AhQTVuY9uQT0KOV1UEk21epBsGZMPg==\"/></item><item><title>Version 2.1</title><description><![CDATA[<ul><li>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li>Suspendisse sed felis ac ante ultrices rhoncus.Etiam quis elit vel nibh placerat facilisis in id leo.</li><li>Vestibulum nec tortor odio, nec malesuada libero.Cras vel convallis nunc.</li><li>Suspendisse tristique massa eget velit consequat tincidunt.Praesent sodales hendrerit pretium.</li></ul>]]></description><pubDate>Tues, 29 Jul 2014 15:20 : 11 + 0000</pubDate><enclosure url=\"https://sparkle-project.org/files/Sparkle%20Test%20App.zip\" sparkle:version=\"2.1\" length=\"107758\" type=\"application/octet-stream\"/></item></channel></rss>" };
-
 };
 
 static AppcaspParserTests appcastParserTests;
