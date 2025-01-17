@@ -7,13 +7,15 @@
 
   ==============================================================================
 */
-#if JUCE_WINDOWS
-#include "Native\Win\winsparkle.h"
-#endif
 
-#include <algorithm>
 
 #include "sparklepp.h"
+#include <algorithm>
+
+#if JUCE_WINDOWS
+#include "Native/Win/include/winsparkle.h"
+#endif
+
 
 class Sparkle::Private
 {
@@ -30,11 +32,13 @@ private:
     Private operator= (Private) = delete;
 };
 
-Sparkle::Sparkle (const juce::URL& /*appcastUrl*/)
+Sparkle::Sparkle (const juce::URL& appcastUrl): d (std::make_unique<Private> (appcastUrl))
 {
 #if JUCE_WINDOWS
-    d = new Private (appcastUrl);
     win_sparkle_set_appcast_url (appcastUrl.toString (true).toUTF8());
+
+    win_sparkle_set_app_details (String (ProjectInfo::companyName).toWideCharPointer(), String (ProjectInfo::projectName).toWideCharPointer(),String( ProjectInfo::versionString).toWideCharPointer());
+
 #endif
 }
 
@@ -44,7 +48,7 @@ Sparkle::~Sparkle()
 
     if (d->initialised)
     {
-        win_sparkle_init();
+        win_sparkle_cleanup();
         d->initialised = false;
     }
 #endif
@@ -179,7 +183,7 @@ void Sparkle::checkForUpdateInformation()
     }
     else
     {
-        didFindValidUpdate();
+        didFindValidUpdate(latestReleaseVersion);
     }
 }
 
@@ -193,9 +197,10 @@ void Sparkle::removeListener (Listener* listener)
     listeners.remove (listener);
 }
 
-void Sparkle::didFindValidUpdate()
+void Sparkle::didFindValidUpdate (const juce::String& version)
 {
-    listeners.call (&Listener::didFindValidUpdate);
+    listeners.call ([=] (Listener& l)
+                    { l.didFindValidUpdate (version); });
 }
 
 void Sparkle::updaterDidNotFindUpdate()

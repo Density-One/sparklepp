@@ -49,7 +49,7 @@ END_JUCE_MODULE_DECLARATION
 class Sparkle
 {
 public:
-    Sparkle();
+    Sparkle(const juce::URL& appcastUrl);
     Sparkle (std::vector<std::string> channels);
     ~Sparkle();
 
@@ -99,6 +99,8 @@ private:
 #else
     void* updaterDelegate;
 #endif
+    class Private;
+    std::unique_ptr<Private> d;
 
     std::vector<std::string> channels;
     juce::ListenerList<Listener> listeners;
