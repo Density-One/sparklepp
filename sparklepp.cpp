@@ -36,8 +36,9 @@ Sparkle::Sparkle (const juce::URL& appcastUrl): d (std::make_unique<Private> (ap
 {
 #if JUCE_WINDOWS
     win_sparkle_set_appcast_url (appcastUrl.toString (true).toUTF8());
-
     win_sparkle_set_app_details (String (ProjectInfo::companyName).toWideCharPointer(), String (ProjectInfo::projectName).toWideCharPointer(),String( ProjectInfo::versionString).toWideCharPointer());
+    win_sparkle_set_automatic_check_for_updates (true);
+
 
 #endif
 }
