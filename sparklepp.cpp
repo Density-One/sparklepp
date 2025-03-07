@@ -14,6 +14,21 @@
 
 #if JUCE_WINDOWS
 #include "Native/Win/include/winsparkle.h"
+
+const char* dsa_pub_pem =
+    "-----BEGIN PUBLIC KEY-----\n"
+    "MIIBvzCCATMGByqGSM44BAEwggEmAoGBAPQzfmI0SoWzc660HFFDUSaeYDiNZhVN\n"
+    "YSy4JjYZAipaq/6BQp7VYMx+E6lna46hXJ0tYDeYA4KhskcM7FVFZmP4eHW9Bh45\n"
+    "HVcxRrunptsNx3UHVkwIvVB8X64Qj+BW51k6B1j3374AVNHpSck8ptfGw+TdBYgm\n"
+    "xoR+pJFN48llAh0AjQ725yPqxiPUIC7RN0Vzze6Vhmgt6Pb2dsrKcQKBgFAUKjpF\n"
+    "NL6axapDwAIVqzG5lCextTcC11J8lU+pCp0EMV4U9NppXd5MXkJiSUbJUWkmNbSG\n"
+    "Y6XaAbqpgdKF9ni8YPOXbVhhxVClb2qS5dAcR/WMmSvSKkNAcPNphKD5F/+zwSeN\n"
+    "rlC+XB15+MY2k7gIcA8NvxObcwKwSdMnQKyHA4GFAAKBgQDncrBdpFsqWvXQMao8\n"
+    "tgK4ZuvpcHF6vN9dqYlufcirsRbj+Q1BpCxyBDl/G28z93dIlfgDfwSU4nsSqCaJ\n"
+    "0RFhB65tjVF8OnlikaD7lnjfkRRmywJQpbehQZhfHXHk95kX376SBodrNG+zez8u\n"
+    "133sHrsFmVIqfG9xmWKYz5z3sg==\n"
+    "-----END PUBLIC KEY-----";
+
 #endif
 
 
@@ -35,10 +50,10 @@ private:
 Sparkle::Sparkle (const juce::URL& appcastUrl): d (std::make_unique<Private> (appcastUrl))
 {
 #if JUCE_WINDOWS
+    win_sparkle_set_dsa_pub_pem (dsa_pub_pem);
     win_sparkle_set_appcast_url (appcastUrl.toString (true).toUTF8());
     win_sparkle_set_app_details (String (ProjectInfo::companyName).toWideCharPointer(), String (ProjectInfo::projectName).toWideCharPointer(),String( ProjectInfo::versionString).toWideCharPointer());
     win_sparkle_set_automatic_check_for_updates (true);
-
 
 #endif
 }
