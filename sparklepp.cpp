@@ -8,7 +8,6 @@
   ==============================================================================
 */
 
-
 #include "sparklepp.h"
 #include <algorithm>
 
@@ -30,29 +29,16 @@ const char* dsa_pub_pem =
     "-----END PUBLIC KEY-----";
 
 #endif
+#include "sparklepp_private.h"
 
 
-class Sparkle::Private
-{
-public:
-    Private (URL appcastURL)
-        : initialised (false),
-          appcastURL (appcastURL)
-    {
-    }
-
-    bool initialised;
-    const URL appcastURL;
-private:
-    Private operator= (Private) = delete;
-};
-
-Sparkle::Sparkle (const juce::URL& appcastUrl): d (std::make_unique<Private> (appcastUrl))
+Sparkle::Sparkle (const juce::URL& appcastUrl)
+    : d (std::make_unique<Private> (appcastUrl))
 {
 #if JUCE_WINDOWS
     win_sparkle_set_dsa_pub_pem (dsa_pub_pem);
     win_sparkle_set_appcast_url (appcastUrl.toString (true).toUTF8());
-    win_sparkle_set_app_details (String (ProjectInfo::companyName).toWideCharPointer(), String (ProjectInfo::projectName).toWideCharPointer(),String( ProjectInfo::versionString).toWideCharPointer());
+    win_sparkle_set_app_details (String (ProjectInfo::companyName).toWideCharPointer(), String (ProjectInfo::projectName).toWideCharPointer(), String (ProjectInfo::versionString).toWideCharPointer());
     win_sparkle_set_automatic_check_for_updates (true);
 
 #endif
@@ -199,7 +185,7 @@ void Sparkle::checkForUpdateInformation()
     }
     else
     {
-        didFindValidUpdate(latestReleaseVersion);
+        didFindValidUpdate (latestReleaseVersion);
     }
 }
 
@@ -216,7 +202,9 @@ void Sparkle::removeListener (Listener* listener)
 void Sparkle::didFindValidUpdate (const juce::String& version)
 {
     listeners.call ([=] (Listener& l)
-                    { l.didFindValidUpdate (version); });
+                    {
+                        l.didFindValidUpdate (version);
+                    });
 }
 
 void Sparkle::updaterDidNotFindUpdate()

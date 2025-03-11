@@ -18,8 +18,10 @@ Sparkle.mm
 #import "SPUCommandLineUserDriver.mm"
 #import "SUUpdatePermissionResponse.mm"
 #import "sparklepp.h"
+#import "sparklepp_private.h"
 
-@interface SparkleDelegate : NSObject <SPUUpdaterDelegate>
+
+@interface SparkleDelegate : NSObject<SPUUpdaterDelegate>
 {
     Sparkle* delegateHandler;
 }
@@ -191,7 +193,7 @@ Called after an update is aborted due to an error.
     NSSet* set = [NSSet set];
     NSLog (@"%@", set);
 
-    for (const auto& channel : channels)
+    for (const auto& channel: channels)
     {
         NSString* str = [NSString stringWithUTF8String:channel.c_str()];
         set = [set setByAddingObject:str];
@@ -203,8 +205,9 @@ Called after an update is aborted due to an error.
 
 @end
 
-Sparkle::Sparkle()
+Sparkle::Sparkle (const juce::URL& appCastUrl)
 {
+    ignoreUnused (appCastUrl);
     updaterDelegate = [[SparkleDelegate alloc] init:this];
     updaterDelegate.updaterController = [[SPUModifiedUpdaterController alloc] initWithStartingUpdater:YES updaterDelegate:updaterDelegate userDriverDelegate:nil];
 
@@ -230,7 +233,9 @@ void Sparkle::checkForUpdateInformation()
 void Sparkle::didFindValidUpdate (const String& version)
 {
     listeners.call ([&version] (Listener& l)
-                    { l.didFindValidUpdate (version); });
+                    {
+                        l.didFindValidUpdate (version);
+                    });
 }
 
 void Sparkle::updaterDidNotFindUpdate()
@@ -241,13 +246,17 @@ void Sparkle::updaterDidNotFindUpdate()
 void Sparkle::didAbortWithError (const String& error)
 {
     listeners.call ([&error] (Listener& l)
-                    { l.didAbortWithError (error); });
+                    {
+                        l.didAbortWithError (error);
+                    });
 }
 
 void Sparkle::failedToDownload (const juce::String& version, const juce::String& explanation)
 {
     listeners.call ([&version, &explanation] (Listener& l)
-                    { l.failedToDownload (version, explanation); });
+                    {
+                        l.failedToDownload (version, explanation);
+                    });
 }
 
 void Sparkle::addListener (Listener* listener)
