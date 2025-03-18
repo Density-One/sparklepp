@@ -28,6 +28,13 @@ const char* dsa_pub_pem =
     "133sHrsFmVIqfG9xmWKYz5z3sg==\n"
     "-----END PUBLIC KEY-----";
 
+Sparkle::UpdateFoundCallback Sparkle::s_updateFoundCallback = nullptr;
+Sparkle::NoUpdateFoundCallback Sparkle::s_noUpdateFoundCallback = nullptr;
+Sparkle::UpdateDialogDismissedCallback Sparkle::s_updateDismissedCallback = nullptr;
+Sparkle::UpdateCancelledCallback Sparkle::s_updateCancelledCallback = nullptr;
+Sparkle::UpdateSkippedCallback Sparkle::s_updateSkippedCallback = nullptr;
+Sparkle::UpdatePostponedCallback Sparkle::s_updatePostponedCallback = nullptr;
+
 #endif
 #include "sparklepp_private.h"
 
@@ -38,9 +45,8 @@ Sparkle::Sparkle (const juce::URL& appcastUrl)
 #if JUCE_WINDOWS
     win_sparkle_set_dsa_pub_pem (dsa_pub_pem);
     win_sparkle_set_appcast_url (appcastUrl.toString (true).toUTF8());
-    win_sparkle_set_app_details (String (ProjectInfo::companyName).toWideCharPointer(), String (ProjectInfo::projectName).toWideCharPointer(), String (ProjectInfo::versionString).toWideCharPointer());
-    win_sparkle_set_automatic_check_for_updates (true);
-
+    win_sparkle_set_automatic_check_for_updates (0);
+    
 #endif
 }
 
@@ -55,6 +61,147 @@ Sparkle::~Sparkle()
     }
 #endif
 }
+#if JUCE_WINDOWS
+
+bool Sparkle::isInitialized() const { return d->initialised; }
+
+
+
+void Sparkle::forceCloseUpdateDialogs()
+{
+    if (d->initialised)
+    {
+        // Clean up Sparkle to close any active dialogs
+        win_sparkle_cleanup();
+        d->initialised = false;
+
+        // Reinitialize for future use
+        win_sparkle_init();
+        d->initialised = true;
+
+        Logger::writeToLog ("SPARKLE: Forced close of update dialogs");
+    }
+}
+
+void Sparkle::staticUpdateDismissedCallback()
+{
+    Logger::writeToLog ("UPDATER: Update dialog dismissed");
+
+    if (s_updateDismissedCallback)
+        s_updateDismissedCallback();
+}
+
+void Sparkle::staticUpdateCancelledCallback()
+{
+    Logger::writeToLog ("UPDATER: Update cancelled by user");
+
+    if (s_updateCancelledCallback)
+        s_updateCancelledCallback();
+}
+void Sparkle::staticUpdateFoundCallback()
+{
+    Logger::writeToLog ("SPARKLE: Update found");
+
+    // Call the application callback if registered
+    if (s_updateFoundCallback)
+        s_updateFoundCallback();
+}
+
+void Sparkle::staticNoUpdateFoundCallback()
+{
+    Logger::writeToLog ("SPARKLE: No update found");
+
+    // Call the application callback if registered
+    if (s_noUpdateFoundCallback)
+        s_noUpdateFoundCallback();
+}
+void Sparkle::staticUpdateSkippedCallback()
+{
+    Logger::writeToLog ("SPARKLE: Update skipped by user");
+
+    // Call the application callback if registered
+    if (s_updateSkippedCallback)
+        s_updateSkippedCallback();
+}
+
+void Sparkle::staticUpdatePostponedCallback()
+{
+    Logger::writeToLog ("SPARKLE: Update postponed by user");
+
+    // Call the application callback if registered
+    if (s_updatePostponedCallback)
+        s_updatePostponedCallback();
+}
+
+// Update setupUpdater method
+void Sparkle::setupUpdater (
+    UpdateFoundCallback updateFoundCB,
+    NoUpdateFoundCallback noUpdateCB,
+    UpdateDialogDismissedCallback dismissedCB,
+    UpdateCancelledCallback cancelledCB,
+    UpdateSkippedCallback skippedCB,
+    UpdatePostponedCallback postponedCB)
+{
+    // Store callbacks
+    s_updateFoundCallback = updateFoundCB;
+    s_noUpdateFoundCallback = noUpdateCB;
+    s_updateDismissedCallback = dismissedCB;
+    s_updateCancelledCallback = cancelledCB;
+    s_updateSkippedCallback = skippedCB;
+    s_updatePostponedCallback = postponedCB;
+    
+
+    if (! d->initialised)
+    {
+        // Set the application details
+        win_sparkle_set_app_details (
+            String (ProjectInfo::companyName).toWideCharPointer(),
+            String (ProjectInfo::projectName).toWideCharPointer(),
+            String (ProjectInfo::versionString).toWideCharPointer());
+
+        // Set up the WinSparkle callbacks
+        win_sparkle_set_did_find_update_callback (staticUpdateFoundCallback);
+        win_sparkle_set_did_not_find_update_callback (staticNoUpdateFoundCallback);
+        win_sparkle_set_update_dismissed_callback (staticUpdateDismissedCallback);
+        win_sparkle_set_update_cancelled_callback (staticUpdateCancelledCallback);
+        win_sparkle_set_update_skipped_callback (staticUpdateSkippedCallback);
+        win_sparkle_set_update_postponed_callback (staticUpdatePostponedCallback);
+
+        // Configure auto-update settings
+        win_sparkle_set_update_check_interval (86400); // Daily
+
+        // Initialize WinSparkle
+        win_sparkle_init();
+        d->initialised = true;
+    }
+}
+
+void Sparkle::checkForUpdatesWithoutUI()
+{
+    if (! d->initialised)
+        setupUpdater();
+
+    win_sparkle_check_update_without_ui();
+}
+
+void Sparkle::checkForUpdatesWithUI()
+{
+    if (! d->initialised)
+        setupUpdater();
+
+    win_sparkle_check_update_with_ui();
+}
+
+void Sparkle::checkForUpdatesWithUIAndInstall()
+{
+    if (! d->initialised)
+        setupUpdater();
+
+    win_sparkle_check_update_with_ui_and_install();
+}
+
+#endif
+
 
 void Sparkle::checkForUpdateInBackground()
 {

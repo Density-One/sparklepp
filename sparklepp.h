@@ -92,6 +92,59 @@ public:
         return channels;
     }
 
+    public:
+#if JUCE_WINDOWS
+    // Callback types for update status
+    using UpdateFoundCallback = std::function<void()>;
+    using NoUpdateFoundCallback = std::function<void()>;
+    using UpdateDialogDismissedCallback = std::function<void()>; 
+    using UpdateCancelledCallback = std::function<void()>; 
+    using UpdateSkippedCallback = std::function<void()>;
+    using UpdatePostponedCallback = std::function<void()>;
+
+    // Setup with expanded callback options
+    void setupUpdater (
+        UpdateFoundCallback updateFoundCB = nullptr,
+        NoUpdateFoundCallback noUpdateCB = nullptr,
+        UpdateDialogDismissedCallback dismissedCB = nullptr,
+        UpdateCancelledCallback cancelledCB = nullptr,
+        UpdateSkippedCallback skippedCB = nullptr,
+        UpdatePostponedCallback postponedCB = nullptr
+        );
+
+    // Check for updates (returns immediately, results via callbacks)
+    void checkForUpdatesWithoutUI();
+
+    // Check for updates with UI prompt
+    void checkForUpdatesWithUI();
+
+    // Check and install if available
+    void checkForUpdatesWithUIAndInstall();
+
+    void forceCloseUpdateDialogs();
+    bool isInitialized() const;
+    
+
+private:
+    // Static callbacks for WinSparkle
+    static void staticUpdateFoundCallback();
+    static void staticNoUpdateFoundCallback();
+    static void staticUpdateDismissedCallback(); 
+    static void staticUpdateCancelledCallback(); 
+    static void staticUpdateSkippedCallback();
+    static void staticUpdatePostponedCallback();
+
+    // Store callback functions as static to access from C callbacks
+    static UpdateFoundCallback s_updateFoundCallback;
+    static NoUpdateFoundCallback s_noUpdateFoundCallback;
+    static UpdateDialogDismissedCallback s_updateDismissedCallback;
+    static UpdateCancelledCallback s_updateCancelledCallback;
+    static UpdateSkippedCallback s_updateSkippedCallback;
+    static UpdatePostponedCallback s_updatePostponedCallback;
+#endif
+
+
+
 private:
 #ifdef __OBJC__
     // Expose ObjC type only to updater_sparkle.mm. This allows ARC to properly track its lifetime.
