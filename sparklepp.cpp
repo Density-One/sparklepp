@@ -14,18 +14,42 @@
 #if JUCE_WINDOWS
 #include "Native/Win/include/winsparkle.h"
 
-const char* dsa_pub_pem =
+const char* DSAPubKey =
     "-----BEGIN PUBLIC KEY-----\n"
-    "MIIBvzCCATMGByqGSM44BAEwggEmAoGBAPQzfmI0SoWzc660HFFDUSaeYDiNZhVN\n"
-    "YSy4JjYZAipaq/6BQp7VYMx+E6lna46hXJ0tYDeYA4KhskcM7FVFZmP4eHW9Bh45\n"
-    "HVcxRrunptsNx3UHVkwIvVB8X64Qj+BW51k6B1j3374AVNHpSck8ptfGw+TdBYgm\n"
-    "xoR+pJFN48llAh0AjQ725yPqxiPUIC7RN0Vzze6Vhmgt6Pb2dsrKcQKBgFAUKjpF\n"
-    "NL6axapDwAIVqzG5lCextTcC11J8lU+pCp0EMV4U9NppXd5MXkJiSUbJUWkmNbSG\n"
-    "Y6XaAbqpgdKF9ni8YPOXbVhhxVClb2qS5dAcR/WMmSvSKkNAcPNphKD5F/+zwSeN\n"
-    "rlC+XB15+MY2k7gIcA8NvxObcwKwSdMnQKyHA4GFAAKBgQDncrBdpFsqWvXQMao8\n"
-    "tgK4ZuvpcHF6vN9dqYlufcirsRbj+Q1BpCxyBDl/G28z93dIlfgDfwSU4nsSqCaJ\n"
-    "0RFhB65tjVF8OnlikaD7lnjfkRRmywJQpbehQZhfHXHk95kX376SBodrNG+zez8u\n"
-    "133sHrsFmVIqfG9xmWKYz5z3sg==\n"
+    "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\n"
+    "vs3SR3fzNnYnC1ZJ5uUdy/FvcKlJJnU=\n"
     "-----END PUBLIC KEY-----";
 
 Sparkle::UpdateFoundCallback Sparkle::s_updateFoundCallback = nullptr;
@@ -43,7 +67,7 @@ Sparkle::Sparkle (const juce::URL& appcastUrl)
     : d (std::make_unique<Private> (appcastUrl))
 {
 #if JUCE_WINDOWS
-    win_sparkle_set_dsa_pub_pem (dsa_pub_pem);
+    win_sparkle_set_dsa_pub_pem (DSAPubKey);
     win_sparkle_set_appcast_url (appcastUrl.toString (true).toUTF8());
     win_sparkle_set_automatic_check_for_updates (0);
     
