@@ -175,6 +175,9 @@ bool Sparkle::isInitialized() const { return d->initialised; }
 void Sparkle::checkForUpdatesManually (std::function<void (UpdateInfo)> foundCallback,
                                        std::function<void()> noUpdateCallback)
 {
+   
+
+
     // Use manual XML parsing to check for updates
     Thread::launch([this, foundCallback, noUpdateCallback]()
                                       {
@@ -192,16 +195,35 @@ void Sparkle::checkForUpdatesManually (std::function<void (UpdateInfo)> foundCal
         // Get current app details
         String currentVersion = JUCEApplicationBase::getInstance()->getApplicationVersion();
         
-        // Get allowed channels for this build
-        auto allowedChannelsVector = allowedChannelsForUpdater();
+              // Determine if current build is beta
+        bool isBetaBuild = false;
+#if BETA_RELEASE_BUILD
+        isBetaBuild = true;
+#endif
+        // Get allowed channels based on build type
         std::set<String> allowedChannels;
-        for (const auto& ch : allowedChannelsVector) {
-            allowedChannels.insert(String(ch.c_str()));
-        }
         
-        // If no channels specified, default to "production" only
-        if (allowedChannels.empty()) {
+        if (isBetaBuild)
+        {
+            // Beta builds can see all channels
+            auto allowedChannelsVector = allowedChannelsForUpdater();
+            for (const auto& ch : allowedChannelsVector) {
+                allowedChannels.insert(String(ch.c_str()));
+            }
+            
+            // If no channels explicitly set, default to both production and beta
+            if (allowedChannels.empty()) {
+                allowedChannels.insert("production");
+                allowedChannels.insert("beta");
+            }
+        }
+        else
+        {
+            // Non-beta builds can ONLY see production, regardless of what's in allowedChannelsForUpdater()
             allowedChannels.insert("production");
+            
+            // Log this important restriction
+            Logger::writeToLog("UPDATER: This is a production build - restricting updates to production channel only");
         }
         
         // Find valid update based on allowed channels
@@ -209,6 +231,17 @@ void Sparkle::checkForUpdatesManually (std::function<void (UpdateInfo)> foundCal
         
         if (updateInfo.valid)
         {
+            // Double-check channel restriction for safety
+            if (!isBetaBuild && updateInfo.channel.compareIgnoreCase("beta") == 0)
+            {
+                // This should never happen due to our filtering, but just to be safe
+                Logger::writeToLog("UPDATER: Beta update detected for production build, ignoring");
+                MessageManager::callAsync([noUpdateCallback]() {
+                    if (noUpdateCallback) noUpdateCallback();
+                });
+                return;
+            }
+            
             // Update available - call the callback
             MessageManager::callAsync([updateInfo, foundCallback]() {
                 if (foundCallback) foundCallback(updateInfo);
@@ -299,7 +332,7 @@ Sparkle::UpdateInfo Sparkle::findValidUpdateWithChannelRules (XmlElement* xml, c
         result.dsaSignature = enclosure->getStringAttribute ("sparkle:dsaSignature", "");
         result.sha256 = enclosure->getStringAttribute ("sparkle:sha256", "");
 
-        Logger::outputDebugString ("Found valid update: version " + result.version + ", channel " + result.channel);
+        Logger::writeToLog ("Found valid update: version " + result.version + ", channel " + result.channel);
 
         // We found the newest valid update, no need to check others
         break;
