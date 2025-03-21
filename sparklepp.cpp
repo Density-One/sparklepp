@@ -57,7 +57,7 @@ const char* DSAPubKey =
 #include "sparklepp_private.h"
 
 
-static int isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber)
+int Sparkle::isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber)
 {
     auto first = StringArray::fromTokens (firstVersionNumber, "vV.", "");
     auto second = StringArray::fromTokens (secondVersionNumber, "vV.", "");
@@ -93,7 +93,7 @@ public:
         auto secondEnclosure = second->getChildByName ("enclosure");
         auto secondVersionNumber = secondEnclosure->getStringAttribute ("sparkle:version", juce::String());
 
-        return isVersionNumberGreater (firstVersionNumber, secondVersionNumber);
+        return Sparkle::isVersionNumberGreater (firstVersionNumber, secondVersionNumber);
     }
 };
 
@@ -413,6 +413,79 @@ void Sparkle::installUpdate (const UpdateInfo& updateInfo)
     // Launch the installer
     win_sparkle_check_update_with_ui_and_install();
 }
+bool Sparkle::isValidUpdateInfo (const UpdateInfo& updateInfo) const
+{
+    // Check if the basic validity flag is set
+    if (! updateInfo.valid)
+    {
+        Logger::writeToLog ("UPDATER: UpdateInfo validation failed - valid flag not set");
+        return false;
+    }
+
+    // Check for empty version string
+    if (updateInfo.version.isEmpty())
+    {
+        Logger::writeToLog ("UPDATER: UpdateInfo validation failed - empty version string");
+        return false;
+    }
+
+    // Check for empty download URL
+    if (updateInfo.downloadUrl.isEmpty())
+    {
+        Logger::writeToLog ("UPDATER: UpdateInfo validation failed - empty download URL");
+        return false;
+    }
+
+    // Check for empty channel (should at least be "production" if not specified)
+    if (updateInfo.channel.isEmpty())
+    {
+        Logger::writeToLog ("UPDATER: UpdateInfo validation failed - empty channel");
+        return false;
+    }
+
+    // Check for zero file size (may indicate incomplete data)
+    if (updateInfo.fileSize <= 0)
+    {
+        Logger::writeToLog ("UPDATER: UpdateInfo validation failed - invalid file size: " + String (updateInfo.fileSize));
+        return false;
+    }
+
+    // DSA signature is important for verifying the download
+    if (updateInfo.dsaSignature.isEmpty())
+    {
+        Logger::writeToLog ("UPDATER: UpdateInfo validation failed - empty DSA signature");
+        return false;
+    }
+
+    // SHA256 is less critical but still important for verification
+    // if (updateInfo.sha256.isEmpty())
+    // {
+    //     Logger::writeToLog("UPDATER: UpdateInfo validation failed - empty SHA256 hash");
+    //     return false;
+    // }
+
+    // All checks passed
+    Logger::writeToLog ("UPDATER: UpdateInfo validation successful - version: " + updateInfo.version + ", channel: " + updateInfo.channel + ", fileSize: " + String (updateInfo.fileSize));
+    return true;
+}
+
+void Sparkle::cacheUpdate(Sparkle::UpdateInfo info)
+{
+    if (isValidUpdateInfo (info))
+        cachedUpdateInfo = std::move (info);
+
+ }
+
+void Sparkle::installUpdateFromCache()
+{
+    Logger::writeToLog ("UPDATER: Installing update from cached info");
+    Logger::writeToLog ("UPDATER: Validating cache");
+    if (isValidUpdateInfo(cachedUpdateInfo))
+    {
+        installUpdate (cachedUpdateInfo);
+    }
+}
+
 
 void Sparkle::forceCloseUpdateDialogs()
 {
@@ -520,21 +593,19 @@ public:
     void isVersionNumberGreaterTest()
     {
         beginTest ("isVersionNumberGreater");
-        expect (isVersionNumberGreater ("v1.0.0", "v0.0.1") == -1);
-        expect (isVersionNumberGreater ("1.0.0", "0.0.1") == -1);
-        expect (isVersionNumberGreater ("V1.0.0", "V0.0.1") == -1);
-        expect (isVersionNumberGreater ("v1.0.1", "v1.0.0") == -1);
-        expect (isVersionNumberGreater ("1.1.1", "v1.1.0") == -1);
-
-        expect (isVersionNumberGreater ("v0.0.1", "v1.0.0") == 1);
-        expect (isVersionNumberGreater ("0.0.1", "1.0.0") == 1);
-        expect (isVersionNumberGreater ("V0.0.1", "V1.0.0") == 1);
-        expect (isVersionNumberGreater ("v1.0.0", "v1.0.1") == 1);
-        expect (isVersionNumberGreater ("1.1.0", "v1.1.1") == 1);
-
-        expect (isVersionNumberGreater ("v0.0.1", "v0.0.1") == 0);
-        expect (isVersionNumberGreater ("1.0.0", "1.0.0") == 0);
-        expect (isVersionNumberGreater ("1.0.0", "V1.0.0") == 0);
+        expect (Sparkle::isVersionNumberGreater ("v1.0.0", "v0.0.1") == -1);
+        expect (Sparkle::isVersionNumberGreater ("1.0.0", "0.0.1") == -1);
+        expect (Sparkle::isVersionNumberGreater ("V1.0.0", "V0.0.1") == -1);
+        expect (Sparkle::isVersionNumberGreater ("v1.0.1", "v1.0.0") == -1);
+        expect (Sparkle::isVersionNumberGreater ("1.1.1", "v1.1.0") == -1);
+        expect (Sparkle::isVersionNumberGreater ("v0.0.1", "v1.0.0") == 1);
+        expect (Sparkle::isVersionNumberGreater ("0.0.1", "1.0.0") == 1);
+        expect (Sparkle::isVersionNumberGreater ("V0.0.1", "V1.0.0") == 1);
+        expect (Sparkle::isVersionNumberGreater ("v1.0.0", "v1.0.1") == 1);
+        expect (Sparkle::isVersionNumberGreater ("1.1.0", "v1.1.1") == 1);
+        expect (Sparkle::isVersionNumberGreater ("v0.0.1", "v0.0.1") == 0);
+        expect (Sparkle::isVersionNumberGreater ("1.0.0", "1.0.0") == 0);
+        expect (Sparkle::isVersionNumberGreater ("1.0.0", "V1.0.0") == 0);
     }
 
     void appcastParsingTest()

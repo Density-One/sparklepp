@@ -93,9 +93,11 @@ public:
     }
 
     public:
+    static int isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber);
+
+
 #if JUCE_WINDOWS
   
-
 
     void forceCloseUpdateDialogs();
     bool isInitialized() const;
@@ -115,8 +117,14 @@ public:
                                   std::function<void()> noUpdateCallback);
     void installUpdate (const UpdateInfo& updateInfo);
 
+    void cacheUpdate (UpdateInfo info);
+
+    void installUpdateFromCache();
+    
+    bool isValidUpdateInfo (const UpdateInfo& updateInfo) const;
+
 private:
-    UpdateInfo latestUpdateInfo;
+    UpdateInfo cachedUpdateInfo;
     UpdateInfo findValidUpdateWithChannelRules (XmlElement* xml, const String& currentVersion, const std::set<String>& allowedChannels);
     String generateSingleItemAppcast (const UpdateInfo& updateInfo);
     String latestUpdateVersion;
@@ -124,7 +132,7 @@ private:
 
 #endif
 
-private:
+    private:
 #ifdef __OBJC__
     // Expose ObjC type only to updater_sparkle.mm. This allows ARC to properly track its lifetime.
     SparkleDelegate* updaterDelegate;
