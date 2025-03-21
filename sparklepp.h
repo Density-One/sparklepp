@@ -94,56 +94,35 @@ public:
 
     public:
 #if JUCE_WINDOWS
-    // Callback types for update status
-    using UpdateFoundCallback = std::function<void()>;
-    using NoUpdateFoundCallback = std::function<void()>;
-    using UpdateDialogDismissedCallback = std::function<void()>; 
-    using UpdateCancelledCallback = std::function<void()>; 
-    using UpdateSkippedCallback = std::function<void()>;
-    using UpdatePostponedCallback = std::function<void()>;
+  
 
-    // Setup with expanded callback options
-    void setupUpdater (
-        UpdateFoundCallback updateFoundCB = nullptr,
-        NoUpdateFoundCallback noUpdateCB = nullptr,
-        UpdateDialogDismissedCallback dismissedCB = nullptr,
-        UpdateCancelledCallback cancelledCB = nullptr,
-        UpdateSkippedCallback skippedCB = nullptr,
-        UpdatePostponedCallback postponedCB = nullptr
-        );
-
-    // Check for updates (returns immediately, results via callbacks)
-    void checkForUpdatesWithoutUI();
-
-    // Check for updates with UI prompt
-    void checkForUpdatesWithUI();
-
-    // Check and install if available
-    void checkForUpdatesWithUIAndInstall();
 
     void forceCloseUpdateDialogs();
     bool isInitialized() const;
     
+    struct UpdateInfo
+    {
+        bool valid = false;
+        String version;
+        String channel;
+        String downloadUrl;
+        int64 fileSize = 0;
+        String dsaSignature;
+        String sha256;
+    };
+    // Main functions
+    void checkForUpdatesManually (std::function<void (UpdateInfo)> foundCallback,
+                                  std::function<void()> noUpdateCallback);
+    void installUpdate (const UpdateInfo& updateInfo);
 
 private:
-    // Static callbacks for WinSparkle
-    static void staticUpdateFoundCallback();
-    static void staticNoUpdateFoundCallback();
-    static void staticUpdateDismissedCallback(); 
-    static void staticUpdateCancelledCallback(); 
-    static void staticUpdateSkippedCallback();
-    static void staticUpdatePostponedCallback();
+    UpdateInfo latestUpdateInfo;
+    UpdateInfo findValidUpdateWithChannelRules (XmlElement* xml, const String& currentVersion, const std::set<String>& allowedChannels);
+    String generateSingleItemAppcast (const UpdateInfo& updateInfo);
+    String latestUpdateVersion;
+    String latestUpdateChannel;
 
-    // Store callback functions as static to access from C callbacks
-    static UpdateFoundCallback s_updateFoundCallback;
-    static NoUpdateFoundCallback s_noUpdateFoundCallback;
-    static UpdateDialogDismissedCallback s_updateDismissedCallback;
-    static UpdateCancelledCallback s_updateCancelledCallback;
-    static UpdateSkippedCallback s_updateSkippedCallback;
-    static UpdatePostponedCallback s_updatePostponedCallback;
 #endif
-
-
 
 private:
 #ifdef __OBJC__
