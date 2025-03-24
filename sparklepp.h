@@ -18,16 +18,16 @@ JUCE Module Format.txt file.
 BEGIN_JUCE_MODULE_DECLARATION
 
 ID:               sparklepp
-vendor:           
+vendor:
 version:          0.1.0
 name:             Sparkle
 description:      Juce module for the Sparkle update library.
 website:          juce_core
 license:          https://github.com/sparkle-project/Sparkle/blob/master/LICENSE
 
-dependencies:     
+dependencies:
 OSXFrameworks:    Foundation Sparkle
-iOSFrameworks:    
+iOSFrameworks:
 
 END_JUCE_MODULE_DECLARATION
 
@@ -36,11 +36,36 @@ END_JUCE_MODULE_DECLARATION
 #ifndef SPARKLEPP_H_INCLUDED
 #define SPARKLEPP_H_INCLUDED
 
+
+int isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber)
+{
+    auto first = StringArray::fromTokens (firstVersionNumber, "vV.", "");
+    auto second = StringArray::fromTokens (secondVersionNumber, "vV.", "");
+
+    first.removeString ("");
+    second.removeString ("");
+
+    for (int i = 0; i < first.size(); ++i)
+    {
+        if (first[i].getIntValue() > second[i].getIntValue())
+        {
+            return -1;
+        }
+        else if (first[i].getIntValue() < second[i].getIntValue())
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 #if SPARKLE_UPDATER_ENABLE
 
 #include "JuceHeader.h"
 #include <vector>
 #include <string>
+
 
 #ifdef __OBJC__
 @class SparkleDelegate;
@@ -49,7 +74,7 @@ END_JUCE_MODULE_DECLARATION
 class Sparkle
 {
 public:
-    Sparkle(const juce::URL& appcastUrl);
+    Sparkle (const juce::URL& appcastUrl);
     Sparkle (std::vector<std::string> channels);
     ~Sparkle();
 
@@ -57,9 +82,9 @@ public:
     void checkForUpdateInBackground();
 
     /* This will asynchronously check if an update is available.
-     * If an update is available the didFindValidUpdate method will becalled on 
+     * If an update is available the didFindValidUpdate method will becalled on
      * listeners.
-     * If an update is not available the updaterDidNotFindUpdate method will 
+     * If an update is not available the updaterDidNotFindUpdate method will
      * be called on listeners.
      */
     void checkForUpdateInformation();
@@ -91,17 +116,14 @@ public:
     {
         return channels;
     }
-
-    public:
+public:
     static int isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber);
 
-
 #if JUCE_WINDOWS
-  
 
     void forceCloseUpdateDialogs();
     bool isInitialized() const;
-    
+
     struct UpdateInfo
     {
         bool valid = false;
@@ -120,9 +142,8 @@ public:
     void cacheUpdate (UpdateInfo info);
 
     void installUpdateFromCache();
-    
-    bool isValidUpdateInfo (const UpdateInfo& updateInfo) const;
 
+    bool isValidUpdateInfo (const UpdateInfo& updateInfo) const;
 private:
     UpdateInfo cachedUpdateInfo;
     UpdateInfo findValidUpdateWithChannelRules (XmlElement* xml, const String& currentVersion, const std::set<String>& allowedChannels);
@@ -131,8 +152,7 @@ private:
     String latestUpdateChannel;
 
 #endif
-
-    private:
+private:
 #ifdef __OBJC__
     // Expose ObjC type only to updater_sparkle.mm. This allows ARC to properly track its lifetime.
     SparkleDelegate* updaterDelegate;

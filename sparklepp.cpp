@@ -57,28 +57,7 @@ const char* DSAPubKey =
 #include "sparklepp_private.h"
 
 
-int Sparkle::isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber)
-{
-    auto first = StringArray::fromTokens (firstVersionNumber, "vV.", "");
-    auto second = StringArray::fromTokens (secondVersionNumber, "vV.", "");
 
-    first.removeString ("");
-    second.removeString ("");
-
-    for (int i = 0; i < first.size(); ++i)
-    {
-        if (first[i].getIntValue() > second[i].getIntValue())
-        {
-            return -1;
-        }
-        else if (first[i].getIntValue() < second[i].getIntValue())
-        {
-            return 1;
-        }
-    }
-
-    return 0;
-}
 
 class VersionNumberDescendingComparitor
 {
