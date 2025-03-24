@@ -37,28 +37,9 @@ END_JUCE_MODULE_DECLARATION
 #define SPARKLEPP_H_INCLUDED
 
 
-int isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber)
-{
-    auto first = StringArray::fromTokens (firstVersionNumber, "vV.", "");
-    auto second = StringArray::fromTokens (secondVersionNumber, "vV.", "");
+// Forward declare the version comparison function
+//int isVersionNumberGreater (const juce::String& firstVersionNumber, const juce::String& secondVersionNumber);
 
-    first.removeString ("");
-    second.removeString ("");
-
-    for (int i = 0; i < first.size(); ++i)
-    {
-        if (first[i].getIntValue() > second[i].getIntValue())
-        {
-            return -1;
-        }
-        else if (first[i].getIntValue() < second[i].getIntValue())
-        {
-            return 1;
-        }
-    }
-
-    return 0;
-}
 
 #if SPARKLE_UPDATER_ENABLE
 
@@ -117,7 +98,6 @@ public:
         return channels;
     }
 public:
-    static int isVersionNumberGreater (const String& firstVersionNumber, const String& secondVersionNumber);
 
 #if JUCE_WINDOWS
 

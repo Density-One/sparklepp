@@ -55,7 +55,7 @@ const char* DSAPubKey =
 
 #endif
 #include "sparklepp_private.h"
-
+#include "../../../../source/controllers/VersionUtilities.h"
 
 
 
@@ -72,7 +72,7 @@ public:
         auto secondEnclosure = second->getChildByName ("enclosure");
         auto secondVersionNumber = secondEnclosure->getStringAttribute ("sparkle:version", juce::String());
 
-        return Sparkle::isVersionNumberGreater (firstVersionNumber, secondVersionNumber);
+        return VersionUtilities::isVersionNumberGreater (firstVersionNumber, secondVersionNumber);
     }
 };
 
@@ -277,7 +277,7 @@ Sparkle::UpdateInfo Sparkle::findValidUpdateWithChannelRules (XmlElement* xml, c
             continue;
 
         // Check if version is newer
-        if (isVersionNumberGreater (currentVersion, itemVersion) != 1)
+        if (VersionUtilities::isVersionNumberGreater (currentVersion, itemVersion) != 1)
             continue;
 
         // Get channel info (if not specified, assume "production")
@@ -519,7 +519,7 @@ void Sparkle::checkForUpdateInformation()
 
     String latestReleaseVersion = getLatestVersionNumber (xml.get());
 
-    if ((latestReleaseVersion.isEmpty()) || isVersionNumberGreater (getCurrentInstalledVersion(), latestReleaseVersion) != 1)
+    if ((latestReleaseVersion.isEmpty()) || VersionUtilities::isVersionNumberGreater (getCurrentInstalledVersion(), latestReleaseVersion) != 1)
     {
         updaterDidNotFindUpdate();
     }
@@ -572,19 +572,19 @@ public:
     void isVersionNumberGreaterTest()
     {
         beginTest ("isVersionNumberGreater");
-        expect (Sparkle::isVersionNumberGreater ("v1.0.0", "v0.0.1") == -1);
-        expect (Sparkle::isVersionNumberGreater ("1.0.0", "0.0.1") == -1);
-        expect (Sparkle::isVersionNumberGreater ("V1.0.0", "V0.0.1") == -1);
-        expect (Sparkle::isVersionNumberGreater ("v1.0.1", "v1.0.0") == -1);
-        expect (Sparkle::isVersionNumberGreater ("1.1.1", "v1.1.0") == -1);
-        expect (Sparkle::isVersionNumberGreater ("v0.0.1", "v1.0.0") == 1);
-        expect (Sparkle::isVersionNumberGreater ("0.0.1", "1.0.0") == 1);
-        expect (Sparkle::isVersionNumberGreater ("V0.0.1", "V1.0.0") == 1);
-        expect (Sparkle::isVersionNumberGreater ("v1.0.0", "v1.0.1") == 1);
-        expect (Sparkle::isVersionNumberGreater ("1.1.0", "v1.1.1") == 1);
-        expect (Sparkle::isVersionNumberGreater ("v0.0.1", "v0.0.1") == 0);
-        expect (Sparkle::isVersionNumberGreater ("1.0.0", "1.0.0") == 0);
-        expect (Sparkle::isVersionNumberGreater ("1.0.0", "V1.0.0") == 0);
+        expect (VersionUtilities::isVersionNumberGreater ("v1.0.0", "v0.0.1") == -1);
+        expect (VersionUtilities::isVersionNumberGreater ("1.0.0", "0.0.1") == -1);
+        expect (VersionUtilities::isVersionNumberGreater ("V1.0.0", "V0.0.1") == -1);
+        expect (VersionUtilities::isVersionNumberGreater ("v1.0.1", "v1.0.0") == -1);
+        expect (VersionUtilities::isVersionNumberGreater ("1.1.1", "v1.1.0") == -1);
+        expect (VersionUtilities::isVersionNumberGreater ("v0.0.1", "v1.0.0") == 1);
+        expect (VersionUtilities::isVersionNumberGreater ("0.0.1", "1.0.0") == 1);
+        expect (VersionUtilities::isVersionNumberGreater ("V0.0.1", "V1.0.0") == 1);
+        expect (VersionUtilities::isVersionNumberGreater ("v1.0.0", "v1.0.1") == 1);
+        expect (VersionUtilities::isVersionNumberGreater ("1.1.0", "v1.1.1") == 1);
+        expect (VersionUtilities::isVersionNumberGreater ("v0.0.1", "v0.0.1") == 0);
+        expect (VersionUtilities::isVersionNumberGreater ("1.0.0", "1.0.0") == 0);
+        expect (VersionUtilities::isVersionNumberGreater ("1.0.0", "V1.0.0") == 0);
     }
 
     void appcastParsingTest()
