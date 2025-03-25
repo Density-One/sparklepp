@@ -343,11 +343,16 @@ String Sparkle::generateSingleItemAppcast (const UpdateInfo& updateInfo)
         + updateInfo.version + "</h2><p>This update includes the latest improvements.</p>]]></description>\n"
                                "      <pubDate>"
         + Time::getCurrentTime().formatted ("%a, %d %b %Y %H:%M:%S +0000") + "</pubDate>\n"
-                                                                             "      <enclosure url=\""
-        + updateInfo.downloadUrl + "\" sparkle:version=\"" + updateInfo.version + "\" sparkle:channel=\"" + updateInfo.channel + "\" length=\"" + String (updateInfo.fileSize) + "\" type=\"application/octet-stream\" sparkle:dsaSignature=\"" + updateInfo.dsaSignature + "\" sparkle:sha256=\"" + updateInfo.sha256 + "\" sparkle:criticalUpdate=\"true\" />\n"
-                                                                                                                                                                                                                                                                                                                         "    </item>\n"
-                                                                                                                                                                                                                                                                                                                         "  </channel>\n"
-                                                                                                                                                                                                                                                                                                                         "</rss>";
+        + "      <enclosure url=\"https://github.com/Density-One/release/raw/refs/heads/main/windows/Density-"
+        + updateInfo.version + "-Windows-beta.exe\" sparkle:version=\""
+        + updateInfo.version + "\" sparkle:channel=\""
+        + updateInfo.channel + "\" length=\""
+        + String (updateInfo.fileSize) + "\" type=\"application/octet-stream\" sparkle:dsaSignature=\""
+        + updateInfo.dsaSignature + "\" sparkle:sha256=\""
+        + updateInfo.sha256 + "\" sparkle:installerArguments=\"/SILENT\" sparkle:criticalUpdate=\"true\" />\n"
+        + "    </item>\n"
+        + "  </channel>\n"
+        + "</rss>";
 
     return appcastXml;
 }
