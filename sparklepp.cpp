@@ -53,6 +53,7 @@ const char* DSAPubKey =
     "-----END PUBLIC KEY-----";
 
 
+
 #endif
 #include "sparklepp_private.h"
 #include "../../../../source/controllers/VersionUtilities.h"
@@ -131,7 +132,8 @@ Sparkle::Sparkle (const juce::URL& appcastUrl)
     : d (std::make_unique<Private> (appcastUrl))
 {
 #if JUCE_WINDOWS
-  
+    OpenSSL_add_all_algorithms();
+
     
 #endif
 }
@@ -357,8 +359,15 @@ String Sparkle::generateSingleItemAppcast (const UpdateInfo& updateInfo)
     return appcastXml;
 }
 
+static void __cdecl  win_sparkle_error_callback ()
+{
+    Logger::writeToLog ("WINSPARKLE ERROR: ");
+    
+}
+
 void Sparkle::installUpdate (const UpdateInfo& updateInfo)
 {
+    /*
     // Only proceed if update info is valid
     if (! updateInfo.valid)
     {
@@ -388,15 +397,19 @@ void Sparkle::installUpdate (const UpdateInfo& updateInfo)
         String (ProjectInfo::versionString).toWideCharPointer());
 
     win_sparkle_set_dsa_pub_pem (DSAPubKey);
-    win_sparkle_set_appcast_url (URL (tempAppcast).toString (true).toUTF8());
-
+    Logger::writeToLog ("Setting WinSparkle appcast URL to: " + d->appcastURL.toString (true));
+    win_sparkle_set_appcast_url (d->appcastURL.toString (true).toUTF8());
+    win_sparkle_set_error_callback (win_sparkle_error_callback);
     // Initialize WinSparkle
     win_sparkle_init();
     d->initialised = true;
 
     // Launch the installer
     win_sparkle_check_update_with_ui_and_install();
+    */
 }
+
+
 bool Sparkle::isValidUpdateInfo (const UpdateInfo& updateInfo) const
 {
     // Check if the basic validity flag is set
@@ -462,12 +475,58 @@ void Sparkle::cacheUpdate(Sparkle::UpdateInfo info)
 
 void Sparkle::installUpdateFromCache()
 {
-    Logger::writeToLog ("UPDATER: Installing update from cached info");
+    /*Logger::writeToLog ("UPDATER: Installing update from cached info");
     Logger::writeToLog ("UPDATER: Validating cache");
     if (isValidUpdateInfo(cachedUpdateInfo))
     {
         installUpdate (cachedUpdateInfo);
-    }
+    }*/
+  
+    if (! isValidUpdateInfo (cachedUpdateInfo))
+        return;
+
+    // Create an XML file for the scheduled task
+    File tempDir = File::getSpecialLocation (File::tempDirectory);
+    File xmlFile = tempDir.getChildFile ("density_update_task.xml");
+
+    // Get the current time and add 30 seconds
+    Time now = Time::getCurrentTime();
+    Time runTime = now + RelativeTime::seconds (30);
+
+    String xmlContent =
+        "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\r\n"
+        "<Task version=\"1.2\">\r\n"
+        "  <RegistrationInfo>\r\n"
+        "    <Description>Density Update Installer</Description>\r\n"
+        "  </RegistrationInfo>\r\n"
+        "  <Triggers>\r\n"
+        "    <TimeTrigger>\r\n"
+        "      <StartBoundary>"
+        + runTime.formatted ("%Y-%m-%dT%H:%M:%S") + "</StartBoundary>\r\n"
+                                                    "    </TimeTrigger>\r\n"
+                                                    "  </Triggers>\r\n"
+                                                    "  <Actions>\r\n"
+                                                    "    <Exec>\r\n"
+                                                    "      <Command>"
+        + File::getSpecialLocation (File::currentApplicationFile).getFullPathName() + "</Command>\r\n"
+                                                                                        "      <Arguments>--run-update "
+        + cachedUpdateInfo.version + "</Arguments>\r\n"
+                                        "    </Exec>\r\n"
+                                        "  </Actions>\r\n"
+                                        "  <Settings>\r\n"
+                                        "    <DeleteExpiredTaskAfter>PT0S</DeleteExpiredTaskAfter>\r\n"
+                                        "  </Settings>\r\n"
+                                        "</Task>";
+
+    xmlFile.replaceWithText (xmlContent);
+
+    // Create the scheduled task using schtasks.exe
+    String command = "schtasks /create /tn \"DensityUpdate\" /xml \"" + xmlFile.getFullPathName() + "\" /f";
+
+    int result = system (command.toUTF8());
+
+    Logger::writeToLog ("UPDATER: Scheduled secure update with result code: " + String (result));
+
 }
 
 

@@ -124,7 +124,8 @@ public:
     void installUpdateFromCache();
 
     bool isValidUpdateInfo (const UpdateInfo& updateInfo) const;
-private:
+
+    private:
     UpdateInfo cachedUpdateInfo;
     UpdateInfo findValidUpdateWithChannelRules (XmlElement* xml, const String& currentVersion, const std::set<String>& allowedChannels);
     String generateSingleItemAppcast (const UpdateInfo& updateInfo);
