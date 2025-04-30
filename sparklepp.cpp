@@ -8,8 +8,13 @@
   ==============================================================================
 */
 
+#if SPARKLE_UPDATER_ENABLE
+
+
 #include "sparklepp.h"
 #include <algorithm>
+
+
 
 #if JUCE_WINDOWS
 #include "Native/Win/include/winsparkle.h"
@@ -57,7 +62,6 @@ const char* DSAPubKey =
 #endif
 #include "sparklepp_private.h"
 #include "../../../../source/controllers/VersionUtilities.h"
-
 
 
 class VersionNumberDescendingComparitor
@@ -667,3 +671,6 @@ private:
 };
 
 static AppcaspParserTests appcastParserTests;
+
+
+#endif
